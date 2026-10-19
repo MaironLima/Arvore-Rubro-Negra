@@ -1,17 +1,22 @@
-"""Menu interativo da Árvore Rubro-Negra — índice de IDs de encomendas."""
-import math
-import random
+"""Menu interativo — índice de IDs de encomendas com Árvore AVL ou Rubro-Negra.
+
+Autor: Mairon Lima de Melo — IMD0039 Estruturas de Dados Básicas II (IMD/UFRN)
+"""
 import sys
 
+from avl import AVLTree
+from experimentos import print_report
 from rbtree import RBTree
 
+TIPOS = {"1": ("AVL", AVLTree), "2": ("Rubro-Negra", RBTree)}
+
 MENU = """
-===== Índice de Encomendas (Árvore Rubro-Negra) =====
+===== Índice de Encomendas ({nome}) =====
  1) Inserir ID(s)          5) Imprimir árvore
  2) Remover ID             6) Métricas (altura, rotações...)
  3) Buscar ID              7) Verificar propriedades
- 4) Percurso em ordem      8) Executar experimentos
- 0) Sair
+ 4) Percurso em ordem      8) Experimentos AVL × Rubro-Negra
+ 9) Trocar tipo de árvore  0) Sair
 """
 
 
@@ -23,24 +28,27 @@ def read_ints(prompt):
             print("  Digite apenas números inteiros.")
 
 
-def experiments(n=1000):
-    cenarios = [("Crescente", list(range(1, n + 1))),
-                ("Decrescente", list(range(n, 0, -1))),
-                ("Não ordenada", random.Random(42).sample(range(1, 100_000), n))]
-    print(f"\n{'Cenário':<14}{'Altura':>8}{'Alt.negra':>11}{'Rotações':>10}{'Recolor.':>10}")
-    for nome, ids in cenarios:
-        t = RBTree()
-        for k in ids:
-            t.insert(k)
-        bh = t.check()
-        print(f"{nome:<14}{t.height():>8}{bh:>11}{t.rotations:>10}{t.recolors:>10}")
-    print(f"Limite teórico 2·log2(n+1) = {2 * math.log2(n + 1):.1f}")
+def escolher_arvore():
+    while True:
+        op = input("Tipo de árvore — 1) AVL  2) Rubro-Negra: ").strip()
+        if op in TIPOS:
+            nome, cls = TIPOS[op]
+            print(f"  Usando árvore {nome} (vazia).")
+            return nome, cls()
+        print("  Opção inválida.")
+
+
+def metricas(t):
+    txt = f"  nós = {t.size}  altura = {t.height()}  rotações = {t.rotations}"
+    if isinstance(t, RBTree):
+        txt += f"  altura negra = {t.check()}  recolorações = {t.recolors}"
+    return txt
 
 
 def main():
-    t = RBTree()
+    nome, t = escolher_arvore()
     while True:
-        print(MENU)
+        print(MENU.format(nome=nome))
         op = input("Opção: ").strip()
         if op == "1":
             for k in read_ints("  IDs (separados por espaço): "):
@@ -54,18 +62,21 @@ def main():
         elif op == "4":
             print("  " + (" ".join(map(str, t.inorder())) or "(árvore vazia)"))
         elif op == "5":
+            print("  Legenda: " + ("[R] vermelho, [B] preto" if isinstance(t, RBTree)
+                                   else "fb = fator de balanceamento (altura esq. − altura dir.)"))
             print(t.pretty())
         elif op == "6":
-            print(f"  nós = {t.size}  altura = {t.height()}  altura negra = {t.check()}"
-                  f"  rotações = {t.rotations}  recolorações = {t.recolors}")
+            print(metricas(t))
         elif op == "7":
             try:
                 t.check()
-                print("  OK: todas as propriedades da Rubro-Negra são válidas")
+                print(f"  OK: todas as propriedades da {nome} são válidas")
             except AssertionError as e:
                 print(f"  ERRO: {e}")
         elif op == "8":
-            experiments()
+            print_report()
+        elif op == "9":
+            nome, t = escolher_arvore()
         elif op == "0":
             return
         else:
